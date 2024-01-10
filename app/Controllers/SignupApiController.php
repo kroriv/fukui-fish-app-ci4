@@ -37,6 +37,7 @@ class SignupApiController extends ResourceController
     $response["status"] = 200;
     $response["preflight"] = $preflight;
     //$response["postData"] = $postData;
+    
     // [200]
     return $this->respond($response);
   }
@@ -45,8 +46,8 @@ class SignupApiController extends ResourceController
   {
     // フォームデータ取得
     $postData = (object)$this->request->getPost();
+    // Preflight取得
     $preflight = $postData->preflight;
-    
     // メールアドレス取得
     $email = $preflight["email"];
     // 認証トークン生成
@@ -54,21 +55,27 @@ class SignupApiController extends ResourceController
     
     // PreflightModel生成
     $preflightModel = new PreflightModel();
-    // PreflightModel挿入
-    $preflightModel->insert([
-      "email" => $email,
-      "token" => $token,
-    ]);
     
-    // レスポンス配列生成
-    $response = [];
-    $response["status"] = 200;
-    $response["email"] = $email;
-    $response["preflight"] = $preflight;
-    //$response["preflight"] = $preflight;
-    //$response["email"] = $email;
-    //$response["$file"] = $file;
-    // [200]
-    return $this->respond($response);
+    // Sleep
+    sleep(3);
+    
+    try {
+      // PreflightModel挿入
+      $preflightModel->insert([
+        "email" => $email,
+        "token" => $token,
+      ]);
+      // [200]
+      return $this->respond([
+        "status" => 200
+      ]);
+    } 
+    catch(\Exception $e) 
+    {
+      // [500]
+      return $this->fail([
+        "status" => 500
+      ], 500);
+    }
   }
 }
