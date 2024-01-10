@@ -21,25 +21,40 @@ class SignupApiController extends ResourceController
   public function LoadPreflight() 
   {
     // フォームデータ取得
-    $postData = $this->request->getPost();
-    // 認証トークン取得
-    $token = $postData["token"];
-    
-    // PreflightModel生成
-    $preflightModel = new PreflightModel();
-    //$preflight = $preflightModel->where("token", $token)->findAll();
-    
+    $postData = (object)$this->request->getPost();
     // Preflight取得
-    $preflight = $preflightModel->findByToken($token);
+    $preflight = $postData->preflight;
+    // 認証トークン取得
+    $token = $preflight["token"];
     
-    // レスポンス配列生成
-    $response = [];
-    $response["status"] = 200;
-    $response["preflight"] = $preflight;
-    //$response["postData"] = $postData;
-    
-    // [200]
-    return $this->respond($response);
+    try
+    {
+      // PreflightModel生成
+      $preflightModel = new PreflightModel();
+      // Preflight取得
+      $preflight = $preflightModel->findByToken($token);
+      
+      // Preflight該当なし
+      if (!$preflight)
+      {
+        // [404]
+        return $this->fail([
+        ], 404);
+      }
+      
+      // [200]
+      return $this->respond([
+        "status" => 200,
+        "preflight" => $preflight
+      ]);
+    }
+    catch(\Exception $e)
+    {
+      // [500]
+      return $this->fail([
+        "status" => 500
+      ]);
+    }
   }
   
   public function CreatePreflight() 
@@ -53,18 +68,19 @@ class SignupApiController extends ResourceController
     // 認証トークン生成
     $token = UtilHelper::GenerateToken(64);
     
-    // PreflightModel生成
-    $preflightModel = new PreflightModel();
-    
-    // Sleep
-    sleep(3);
-    
-    try {
+    try 
+    {
+      // PreflightModel生成
+      $preflightModel = new PreflightModel();
       // PreflightModel挿入
       $preflightModel->insert([
         "email" => $email,
         "token" => $token,
       ]);
+      
+      // Sleep
+      sleep(3);
+      
       // [200]
       return $this->respond([
         "status" => 200
@@ -75,7 +91,7 @@ class SignupApiController extends ResourceController
       // [500]
       return $this->fail([
         "status" => 500
-      ], 500);
+      ]);
     }
   }
 }

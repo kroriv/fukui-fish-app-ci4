@@ -2,8 +2,6 @@
 
 use CodeIgniter\Model;
 use CodeIgniter\Database\Query;
-use App\Entities\PreflightEntity;
-use Faker\Core\Number;
 
 class PreflightModel extends Model
 {
@@ -23,7 +21,7 @@ class PreflightModel extends Model
   protected $updatedField  = "updatedDate";
   
   
-  public function findByToken($token): PreflightEntity
+  public function findByToken($token)
   {
     // 暗号鍵取得
     $key = getenv("database.default.encryption.key");
