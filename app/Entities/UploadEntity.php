@@ -6,7 +6,7 @@ use App\Entities\Traits\Shared;
 /**
  * UploadsEntity
  */
-class UploadsEntity extends Entity
+class UploadEntity extends Entity
 {
   /** @var Array Attributes */
   protected $attributes = [

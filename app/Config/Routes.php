@@ -18,5 +18,5 @@ use CodeIgniter\Router\RouteCollection;
 $routes->post("/api/signup/load.preflight", "SignupApiController::LoadPreflight");
 // 仮登録作成
 $routes->post("/api/signup/create.preflight", "SignupApiController::CreatePreflight");
-
-$routes->get("/api/signup/test.preflight", "SignupApiController::TestPreflight");
+// 仮登録認証
+$routes->post("/api/signup/auth.preflight", "SignupApiController::AuthPreflight");

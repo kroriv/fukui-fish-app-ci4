@@ -1,5 +1,8 @@
 <?php namespace App\Helpers;
 
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
 /**
  * UtilHelper
  * @todo ユーティリティヘルパー
@@ -82,6 +85,16 @@ class UtilHelper
     return substr($output, 0, $key_length);
   }
 	
+	/**
+	 * GetRandomNumber
+	 * @param Int $length
+	 * @todo ランダム文字列取得
+	 */
+	public static function GetRandomNumber(Int $length = 32)
+	{
+		return substr(str_shuffle("1234567890"), 0, $length);
+	}
+  
 	/**
 	 * GetRandomString
 	 * @param Int $length
@@ -192,5 +205,41 @@ class UtilHelper
   public static function IsAllowedDomain(string $url_host = "")
   {
     return isset($_SERVER["HTTP_REFERER"]) && parse_url($_SERVER["HTTP_REFERER"], PHP_URL_HOST) === $url_host;
+  }
+  
+  /**
+   * GetEncodedSignature
+   * @param Array $payload
+   * @return String any
+   */
+  public static function GetEncodedSignature(array $payload): string
+  {
+    /*
+    // Payload生成
+    $payload = [];
+    
+    // Payload生成
+    $payload = [
+      "data" => [
+        "ticket"  => (object)["token" => $ticket_token]
+      ],
+      "iat" => time(),
+      "exp" => time() + ($lifespan) // 寿命を与える
+    ];
+    */
+    
+    // 署名生成
+    return JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
+  }
+  
+  /**
+   * GetDecodedSignature
+   * @param String $qrcode
+   * @return Array any
+   */
+  public static function GetDecodedSignature(string $signature): array
+  {
+    $decoded = JWT::decode($signature, new Key(getenv("jwt.secret.key"), getenv("jwt.signing.algorithm")));
+    return (array)$decoded;
   }
 }

@@ -2,15 +2,20 @@
 
 use CodeIgniter\Entity\Entity;
 
-class PreflightEntity extends Entity
+class UserEntity extends Entity
 {
   /** @var Array Attributes */
   protected $attributes = [
     "num"    => null,
     "title"  => "*",
     "email"  => null,
+    "passphrase"  => null,
+    "section"  => null,
+    "personal"  => null,
+    "viewname"  => null,
     "token"  => null,
-    "authcode"  => null,
+    "signature"  => null,
+    "active"  => null,
     "dragSortOrder" => null,
     "createdByUserNum" => 1,
     "updatedByUserNum" => 1
@@ -31,8 +36,11 @@ class PreflightEntity extends Entity
     return
     [
       "email"  => $this->email,
+      "section"  => $this->section,
+      "personal"  => $this->personal,
+      "viewname"  => $this->viewname,
       "token"  => $this->token,
-      "authcode"  => $this->authcode,
+      "signature"  => $this->signature,
     ];
   }
 }
