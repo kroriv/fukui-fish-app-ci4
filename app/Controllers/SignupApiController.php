@@ -119,7 +119,7 @@ class SignupApiController extends ResourceController
     // その他例外
     catch (\Exception $e)
     {
-      // [401]
+      // [500]
       return [
         "status" => 500,
         "message" => "予期しない例外が発生しました。"
@@ -250,12 +250,16 @@ class SignupApiController extends ResourceController
     $preflight = $postData->preflight;
     
     // 認証署名取得
-    $signature = $preflight["signature"];
+    $signature = @$preflight["signature"];
     // 認証コード取得
-    $authcode = $preflight["authcode"];
+    $authcode = @$preflight["authcode"];
+    
+    // Sleep
+    sleep(3);
     
     // 署名検証
     $validated = self::_ValidatePreflightSignature($signature);
+    
     // 署名エラー
     if (intval(@$validated["status"]) !== 200)
     {
@@ -265,7 +269,25 @@ class SignupApiController extends ResourceController
       ], @$validated["status"]);
     }
     
+    // Preflight取得
+    $preflight = @$validated["preflight"];
     
+    // 認証コード不一致
+    if (!password_verify($authcode, $preflight->authcode))
+    {
+      // [403]
+      return $this->fail([
+        "status" => 403,
+        "message" => "認証コードが一致しません。"
+      ], 403);
+    }
     
+    // [200]
+    return $this->respond([
+      "status" => 200,
+      "signature" => $signature,
+      "authcode" => $authcode,
+      "preflight" => $preflight
+    ]);
   }
 }
