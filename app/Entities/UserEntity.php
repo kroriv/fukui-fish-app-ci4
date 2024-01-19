@@ -1,6 +1,7 @@
 <?php namespace App\Entities;
 
 use CodeIgniter\Entity\Entity;
+use App\Helpers\UtilHelper;
 
 class UserEntity extends Entity
 {
@@ -8,13 +9,12 @@ class UserEntity extends Entity
   protected $attributes = [
     "num"    => null,
     "title"  => "*",
-    "email"  => null,
+    "username"  => null,
     "passphrase"  => null,
     "section"  => null,
     "personal"  => null,
     "viewname"  => null,
     "token"  => null,
-    "signature"  => null,
     "active"  => null,
     "dragSortOrder" => null,
     "createdByUserNum" => 1,
@@ -35,12 +35,11 @@ class UserEntity extends Entity
   {
     return
     [
-      "email"  => $this->email,
+      "username"  => $this->username,
       "section"  => $this->section,
       "personal"  => $this->personal,
       "viewname"  => $this->viewname,
       "token"  => $this->token,
-      "signature"  => $this->signature,
     ];
   }
 }

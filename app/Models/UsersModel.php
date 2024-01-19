@@ -8,15 +8,14 @@ class UsersModel extends Model
   protected $db;
   protected $table = "cmsb_users";
   protected $primaryKey = "num";
-  protected $returnType = "App\Entities\PreflightEntity";
+  protected $returnType = "App\Entities\UserEntity";
   protected $allowedFields = [
-    "email",
+    "username",
     "passphrase",
     "section",
     "personal",
     "viewname",
     "token",
-    "signature",
     "active",
     "title",
   ];
@@ -33,7 +32,7 @@ class UsersModel extends Model
     // クエリ生成
     $query = $this->db->prepare(static function ($db) 
     {
-      $sql = "SELECT AES_DECRYPT(`email`, UNHEX(SHA2(?,512))) AS email, token FROM cmsb_users WHERE token IS NOT NULL AND token = ?";
+      $sql = "SELECT AES_DECRYPT(`username`, UNHEX(SHA2(?,512))) AS username, token FROM cmsb_users WHERE token IS NOT NULL AND token = ?";
       return (new Query($db))->setQuery($sql);
     });
     // クエリ実行
@@ -51,12 +50,12 @@ class UsersModel extends Model
     // クエリ生成
     $query = $this->db->prepare(static function ($db) 
     {
-      $sql = "INSERT INTO cmsb_users (`email`, `token`, `title`) VALUES (AES_ENCRYPT(?, UNHEX(SHA2(?,512))), ?, ?)";
+      $sql = "INSERT INTO cmsb_users (`username`, `token`, `title`) VALUES (AES_ENCRYPT(?, UNHEX(SHA2(?,512))), ?, ?)";
       return (new Query($db))->setQuery($sql);
     });
     // クエリ実行
     $result = $query->execute(
-      $data["email"],
+      $data["username"],
       $key,
       $data["token"],
       "*"

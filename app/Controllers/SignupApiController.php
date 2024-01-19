@@ -10,6 +10,9 @@ use Firebase\JWT\SignatureInvalidException;
 use Firebase\JWT\ExpiredException;
 use App\Helpers\UtilHelper;
 use App\Models\PreflightsModel;
+use App\Models\UsersModel;
+use App\Entities\PreflightEntity;
+use App\Entities\UserEntity;
 
 class SignupApiController extends ResourceController
 {
@@ -62,7 +65,6 @@ class SignupApiController extends ResourceController
       $preflightsModel = new PreflightsModel();
       // Preflight取得
       $preflight = $preflightsModel->findByToken($token);
-      
       // Preflight該当なし
       if (!$preflight)
       {
@@ -131,7 +133,7 @@ class SignupApiController extends ResourceController
   {
     // 署名検証
     $validated = self::_ValidatePreflightSignature($signature);
-    // 署名エラー
+    // 署名検証エラー
     if (intval(@$validated["status"]) !== 200)
     {
       return $this->fail([
@@ -197,9 +199,13 @@ class SignupApiController extends ResourceController
     // メールアドレス取得
     $email = $preflight["email"];
     // 認証コード生成
-    $authcode = password_hash(UtilHelper::GetRandomNumber(4), PASSWORD_DEFAULT);
-    // 認証トークン生成
+    //$authcode = password_hash(UtilHelper::GetRandomNumber(4), PASSWORD_DEFAULT);
+    $authcode = password_hash("1111", PASSWORD_DEFAULT);
+    // 認証識別子生成
     $token = UtilHelper::GenerateToken(64);
+    
+    // Sleep
+    sleep(3);
     
     try 
     {
@@ -222,10 +228,13 @@ class SignupApiController extends ResourceController
       ];
       
       // 署名生成
-      $signature =JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
+      $signature = JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
       
-      // Sleep
-      sleep(3);
+      // PreflightEntity生成
+      $preflight = new PreflightEntity((array)$preflight);
+      
+      // 認証コードメール送信
+      
       
       // [200]
       return $this->respond([
@@ -259,8 +268,7 @@ class SignupApiController extends ResourceController
     
     // 署名検証
     $validated = self::_ValidatePreflightSignature($signature);
-    
-    // 署名エラー
+    // 署名検証エラー
     if (intval(@$validated["status"]) !== 200)
     {
       return $this->fail([
@@ -282,12 +290,67 @@ class SignupApiController extends ResourceController
       ], 403);
     }
     
+    // (再生成)署名ぺイロード生成
+    $payload = [
+      "data" => [
+        "preflight" => (object)["token" => $preflight->token]
+      ],
+      "iat" => time(),
+      "exp" => time() + 60*60*24 // 24時間の寿命を与える
+    ];
+    
+    // (再生成)署名生成
+    $signature =JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
+    
     // [200]
     return $this->respond([
       "status" => 200,
       "signature" => $signature,
-      "authcode" => $authcode,
-      "preflight" => $preflight
     ]);
+  }
+  
+  public function CreateUser() 
+  {
+    // フォームデータ取得
+    $postData = (object)$this->request->getPost();
+    // User取得
+    $user = $postData->user;
+    // ユーザー名取得
+    $username = $user["username"];
+    // パスワード取得
+    $passphrase = password_hash($user["passphrase"], PASSWORD_DEFAULT);
+    // 識別子生成
+    $token = UtilHelper::GenerateToken(64);
+    
+    // Sleep
+    sleep(3);
+    
+    try 
+    {
+      // UsersModel生成
+      $usersModel = new UsersModel();
+      // UsersModel挿入
+      $usersModel->insert([
+        "username" => $username,
+        "passphrase" => $passphrase,
+        "token" => $token,
+      ]);
+      
+      
+      // 利用者登録登録完了メール送信
+      
+      
+      // [200]
+      return $this->respond([
+        "status" => 200,
+      ]);
+    } 
+    catch(\Exception $e) 
+    {
+      // [500]
+      return $this->fail([
+        "status" => 500
+      ]);
+    }
   }
 }

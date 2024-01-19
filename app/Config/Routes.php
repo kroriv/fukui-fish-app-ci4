@@ -20,3 +20,8 @@ $routes->post("/api/signup/load.preflight", "SignupApiController::LoadPreflight"
 $routes->post("/api/signup/create.preflight", "SignupApiController::CreatePreflight");
 // 仮登録認証
 $routes->post("/api/signup/auth.preflight", "SignupApiController::AuthPreflight");
+
+// 利用者作成
+$routes->post("/api/signup/create.user", "SignupApiController::CreateUser");
+// 利用者認証
+$routes->post("/api/signup/auth.user", "SignupApiController::AuthUser");
