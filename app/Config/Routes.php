@@ -1,5 +1,4 @@
-<?php 
-use CodeIgniter\Router\RouteCollection;
+<?php use CodeIgniter\Router\RouteCollection;
 
 /**
  * ========== Remix用メソッド規約 ============
@@ -14,6 +13,11 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
+ // TEST
+$routes->get("/", "HomeController::Index");
+ // TEST
+$routes->get("/test", "SignupApiController::TestPreflight");
+
 // 仮登録取得
 $routes->post("/api/signup/load.preflight", "SignupApiController::LoadPreflight");
 // 仮登録作成
@@ -24,4 +28,4 @@ $routes->post("/api/signup/auth.preflight", "SignupApiController::AuthPreflight"
 // 利用者作成
 $routes->post("/api/signup/create.user", "SignupApiController::CreateUser");
 // 利用者認証
-$routes->post("/api/signup/auth.user", "SignupApiController::AuthUser");
+$routes->post("/api/signin/auth.user", "SigninApiController::AuthUser");

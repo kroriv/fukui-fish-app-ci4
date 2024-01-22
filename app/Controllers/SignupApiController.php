@@ -22,6 +22,15 @@ class SignupApiController extends ResourceController
   /** @var String Format */
   protected $format = "json";
   
+  public function TestPreflight()
+  {
+    // [200]
+    return $this->respond([
+      "status" => 200,
+      "test" => "test"
+    ]);
+  }
+  
   public function LoadPreflight() 
   {
     // フォームデータ取得
@@ -66,7 +75,7 @@ class SignupApiController extends ResourceController
       // Preflight取得
       $preflight = $preflightsModel->findByToken($token);
       // Preflight該当なし
-      if (!$preflight)
+      if (!$preflight->num)
       {
         // [404]
         return [
@@ -195,9 +204,9 @@ class SignupApiController extends ResourceController
     // フォームデータ取得
     $postData = (object)$this->request->getPost();
     // Preflight取得
-    $preflight = $postData->preflight;
+    $postPreflight = $postData->preflight;
     // メールアドレス取得
-    $email = $preflight["email"];
+    $email = @$postPreflight["email"];
     // 認証コード生成
     //$authcode = password_hash(UtilHelper::GetRandomNumber(4), PASSWORD_DEFAULT);
     $authcode = password_hash("1111", PASSWORD_DEFAULT);
@@ -211,43 +220,56 @@ class SignupApiController extends ResourceController
     {
       // PreflightsModel生成
       $preflightsModel = new PreflightsModel();
-      // PreflightsModel挿入
+      // Preflight取得
+      $prefligh = $preflightsModel->findByEmail($email);
+      // Preflight該当あり
+      if ($prefligh->num)
+      {
+        // [409]
+        return $this->fail([
+          "status" => 409,
+          "message" => "既に登録されているメールアドレスです。"
+        ], 409);
+      }
+      
+      // Preflight挿入
       $preflightsModel->insert([
         "email" => $email,
         "authcode" => $authcode,
         "token" => $token,
       ]);
       
-      // 署名ぺイロード生成
-      $payload = [
-        "data" => [
-          "preflight" => (object)["token" => $token]
-        ],
-        "iat" => time(),
-        "exp" => time() + 60*60*1 // 1時間の寿命を与える
-      ];
-      
-      // 署名生成
-      $signature = JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
-      
       // PreflightEntity生成
-      $preflight = new PreflightEntity((array)$preflight);
+      $preflight = $preflightsModel->findByToken($token);
+      // 署名生成(1時間有効)
+      $signature = $preflight->createSignature(60*60*1);
       
       // 認証コードメール送信
-      
+      //$preflight->sendAuthcodeMail();
       
       // [200]
       return $this->respond([
         "status" => 200,
-        "signature" => $signature
+        "signature" => $signature,
       ]);
     } 
-    catch(\Exception $e) 
+    // データベース例外
+    catch(DatabaseException $e)
     {
       // [500]
       return $this->fail([
-        "status" => 500
-      ]);
+        "status" => 500,
+        "message" => "データベースでエラーが発生しました。"
+      ], 500);
+    }
+    // その他例外
+    catch (\Exception $e)
+    {
+      // [500]
+      return $this->fail([
+        "status" => 500,
+        "message" => "予期しない例外が発生しました。"
+      ], 500);
     }
   }
   
@@ -256,12 +278,12 @@ class SignupApiController extends ResourceController
     // フォームデータ取得
     $postData = (object)$this->request->getPost();
     // Preflight取得
-    $preflight = $postData->preflight;
+    $postPreflight = $postData->preflight;
     
     // 認証署名取得
-    $signature = @$preflight["signature"];
+    $signature = @$postPreflight["signature"];
     // 認証コード取得
-    $authcode = @$preflight["authcode"];
+    $authcode = @$postPreflight["authcode"];
     
     // Sleep
     sleep(3);
@@ -279,28 +301,18 @@ class SignupApiController extends ResourceController
     
     // Preflight取得
     $preflight = @$validated["preflight"];
-    
     // 認証コード不一致
     if (!password_verify($authcode, $preflight->authcode))
     {
       // [403]
       return $this->fail([
         "status" => 403,
-        "message" => "認証コードが一致しません。"
+        "message" => "認証コードが一致しません。",
       ], 403);
     }
     
-    // (再生成)署名ぺイロード生成
-    $payload = [
-      "data" => [
-        "preflight" => (object)["token" => $preflight->token]
-      ],
-      "iat" => time(),
-      "exp" => time() + 60*60*24 // 24時間の寿命を与える
-    ];
-    
-    // (再生成)署名生成
-    $signature =JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
+    // 署名再生成
+    $signature = $preflight->createSignature();
     
     // [200]
     return $this->respond([
@@ -314,11 +326,17 @@ class SignupApiController extends ResourceController
     // フォームデータ取得
     $postData = (object)$this->request->getPost();
     // User取得
-    $user = $postData->user;
+    $postUser = $postData->user;
     // ユーザー名取得
-    $username = $user["username"];
+    $username = $postUser["username"];
     // パスワード取得
-    $passphrase = password_hash($user["passphrase"], PASSWORD_DEFAULT);
+    $passphrase = password_hash($postUser["passphrase"], PASSWORD_DEFAULT);
+    // 利用者区分取得
+    $section = $postUser["section"];
+    // 店舗名・屋号取得
+    $viewname = $postUser["viewname"];
+    // 個人情報取得
+    $personal = $postUser["personal"];
     // 識別子生成
     $token = UtilHelper::GenerateToken(64);
     
@@ -329,28 +347,53 @@ class SignupApiController extends ResourceController
     {
       // UsersModel生成
       $usersModel = new UsersModel();
+      // User取得
+      $user = $usersModel->findByUsername($username);
+      // User該当あり
+      if ($user->num)
+      {
+        // [409]
+        return $this->fail([
+          "status" => 409,
+          "message" => "登録されているユーザー名です。"
+        ], 409);
+      }
+      
       // UsersModel挿入
       $usersModel->insert([
         "username" => $username,
         "passphrase" => $passphrase,
+        "section" => $section,
+        "viewname" => $viewname,
+        "personal" => $personal,
         "token" => $token,
       ]);
       
-      
       // 利用者登録登録完了メール送信
-      
+      //$user->sendThanksMail();
       
       // [200]
       return $this->respond([
         "status" => 200,
       ]);
     } 
-    catch(\Exception $e) 
+    // データベース例外
+    catch(DatabaseException $e)
     {
       // [500]
       return $this->fail([
-        "status" => 500
-      ]);
+        "status" => 500,
+        "message" => "データベースでエラーが発生しました。"
+      ], 500);
+    }
+    // その他例外
+    catch (\Exception $e)
+    {
+      // [500]
+      return $this->fail([
+        "status" => 500,
+        "message" => "予期しない例外が発生しました。"
+      ], 500);
     }
   }
 }

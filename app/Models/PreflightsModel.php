@@ -2,6 +2,7 @@
 
 use CodeIgniter\Model;
 use CodeIgniter\Database\Query;
+use App\Entities\PreflightEntity;
 
 class PreflightsModel extends Model
 {
@@ -21,14 +22,14 @@ class PreflightsModel extends Model
   protected $createdField  = "createdDate";
   protected $updatedField  = "updatedDate";
   
-  public function findByToken($token)
+  public function findByToken(string $token): PreflightEntity
   {
     // 暗号鍵取得
     $key = getenv("database.default.encryption.key");
     // クエリ生成
     $query = $this->db->prepare(static function ($db) 
     {
-      $sql = "SELECT AES_DECRYPT(`email`, UNHEX(SHA2(?,512))) AS email, authcode, token FROM cmsb_preflights WHERE token IS NOT NULL AND token = ?";
+      $sql = "SELECT *, AES_DECRYPT(`email`, UNHEX(SHA2(?,512))) AS `email` FROM cmsb_preflights WHERE token IS NOT NULL AND token = ?";
       return (new Query($db))->setQuery($sql);
     });
     // クエリ実行
@@ -36,7 +37,30 @@ class PreflightsModel extends Model
       $key,
       $token
     );
-    return $result->getRow();
+    // レコード取得
+    $row = $result->getRow();
+    
+    return $row && $row->num ? new PreflightEntity((array)$row) : new PreflightEntity();
+  }
+  public function findByEmail(string $email): PreflightEntity
+  {
+    // 暗号鍵取得
+    $key = getenv("database.default.encryption.key");
+    // クエリ生成
+    $query = $this->db->prepare(static function ($db) 
+    {
+      $sql = "SELECT *, AES_DECRYPT(`email`, UNHEX(SHA2(?,512))) AS `email` FROM cmsb_preflights WHERE email IS NOT NULL HAVING email = ?";
+      return (new Query($db))->setQuery($sql);
+    });
+    // クエリ実行
+    $result = $query->execute(
+      $key,
+      $email
+    );
+    // レコード取得
+    $row = $result->getRow();
+    
+    return $row && $row->num ? new PreflightEntity((array)$row) : new PreflightEntity();
   }
   
   public function insert($data = [], $returnID = true)

@@ -1,6 +1,8 @@
 <?php namespace App\Entities;
 
 use CodeIgniter\Entity\Entity;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -13,8 +15,8 @@ class PreflightEntity extends Entity
     "num"    => null,
     "title"  => "*",
     "email"  => null,
-    "token"  => null,
     "authcode"  => null,
+    "token"  => null,
     "dragSortOrder" => null,
     "createdByUserNum" => 1,
     "updatedByUserNum" => 1
@@ -35,9 +37,23 @@ class PreflightEntity extends Entity
     return
     [
       "email"  => $this->email,
-      "token"  => $this->token,
       "authcode"  => $this->authcode,
+      "token"  => $this->token,
     ];
+  }
+  
+  public function createSignature(int $lifespan = null): String
+  {
+    // 署名ぺイロード生成
+    $payload = [
+      "data" => [
+        "preflight" => (object)["token" => $this->token]
+      ],
+      "iat" => time(),
+      "exp" => time() + ($lifespan ? intval($lifespan) : 60*60*24) // 指定がなければ24時間の寿命を与える
+    ];
+    // 署名生成
+    return JWT::encode($payload, getenv("jwt.secret.key"), getenv("jwt.signing.algorithm"));
   }
   
   /**
