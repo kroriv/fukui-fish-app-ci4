@@ -263,8 +263,6 @@ class SignupApiController extends ResourceController
       return $this->respond([
         "status" => 200,
         "signature" => $signature,
-        "email" => $email,
-        "authcode" => $authcode,
       ]);
     } 
     // データベース例外

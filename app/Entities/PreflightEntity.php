@@ -125,11 +125,6 @@ class PreflightEntity extends Entity
       require ROOTPATH . "vendor/autoload.php";
       require ROOTPATH . "vendor/phpmailer/phpmailer/language/phpmailer.lang-ja.php";
       
-      $to = "kroriv.github.io@gmail.com";
-      $to_name = 'Taro Yamada';
-      $subject = 'メールの件名';
-      $body = 'メールの本文';
-      
       $mailer->isSMTP();
       $mailer->SMTPAuth = true;
       $mailer->Host = getenv("smtp.default.hostname");
