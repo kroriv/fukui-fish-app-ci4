@@ -2,7 +2,6 @@
 
 use CodeIgniter\Entity\Entity;
 use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
@@ -11,15 +10,15 @@ class UserEntity extends Entity
 {
   /** @var Array Attributes */
   protected $attributes = [
-    "num"    => null,
-    "title"  => "*",
-    "username"  => null,
-    "passphrase"  => null,
-    "section"  => null,
-    "viewname"  => null,
-    "personal"  => null,
-    "active"  => null,
-    "token"  => null,
+    "num" => null,
+    "title" => "*",
+    "username" => null,
+    "passphrase" => null,
+    "section" => null,
+    "viewname" => null,
+    "personal" => null,
+    "active" => null,
+    "token" => null,
     "dragSortOrder" => null,
     "createdByUserNum" => 1,
     "updatedByUserNum" => 1
@@ -54,12 +53,12 @@ class UserEntity extends Entity
   {
     return
     [
-      "username"  => $this->username,
-      "section"  => $this->section,
-      "viewname"  => $this->viewname,
-      "personal"  => $this->personal,
-      "active"  => $this->active,
-      "token"  => $this->token,
+      "username" => $this->username,
+      "section" => $this->section,
+      "viewname" => $this->viewname,
+      "personal" => $this->personal,
+      "active" => $this->active,
+      "token" => $this->token,
     ];
   }
 }

@@ -1,5 +1,7 @@
 <?php namespace App\Controllers;
 
+use App\Entities\PreflightEntity;
+
 class HomeController extends BaseController
 {
   public function Index(): string

@@ -11,8 +11,10 @@ use Firebase\JWT\ExpiredException;
 use App\Helpers\UtilHelper;
 use App\Models\PreflightsModel;
 use App\Models\UsersModel;
+use App\Models\TemplatesModel;
 use App\Entities\PreflightEntity;
 use App\Entities\UserEntity;
+use App\Entities\TemplateEntity;
 
 class SignupApiController extends ResourceController
 {
@@ -24,10 +26,15 @@ class SignupApiController extends ResourceController
   
   public function TestPreflight()
   {
+    // TemplatesModel生成
+    $templatesModel = new TemplatesModel();
+    // Template取得
+    $temlate = $templatesModel->where("num", 1)->first();
+    
     // [200]
     return $this->respond([
       "status" => 200,
-      "test" => "test"
+      "preflight_authcode_notice_title" => $temlate->preflight_authcode_notice_title
     ]);
   }
   
@@ -208,8 +215,8 @@ class SignupApiController extends ResourceController
     // メールアドレス取得
     $email = @$postPreflight["email"];
     // 認証コード生成
-    //$authcode = password_hash(UtilHelper::GetRandomNumber(4), PASSWORD_DEFAULT);
-    $authcode = password_hash("1111", PASSWORD_DEFAULT);
+    $authcode = UtilHelper::GetRandomNumber(4);
+    //$authcode = "1111";
     // 認証識別子生成
     $token = UtilHelper::GenerateToken(64);
     
@@ -218,12 +225,12 @@ class SignupApiController extends ResourceController
     
     try 
     {
-      // PreflightsModel生成
-      $preflightsModel = new PreflightsModel();
-      // Preflight取得
-      $prefligh = $preflightsModel->findByEmail($email);
-      // Preflight該当あり
-      if ($prefligh->num)
+      // UsersModel生成
+      $usersModel = new UsersModel();
+      // User取得
+      $user = $usersModel->findByUsername($email);
+      // User該当あり
+      if ($user->num)
       {
         // [409]
         return $this->fail([
@@ -232,6 +239,8 @@ class SignupApiController extends ResourceController
         ], 409);
       }
       
+      // PreflightsModel生成
+      $preflightsModel = new PreflightsModel();
       // Preflight挿入
       $preflightsModel->insert([
         "email" => $email,
@@ -240,17 +249,22 @@ class SignupApiController extends ResourceController
       ]);
       
       // PreflightEntity生成
-      $preflight = $preflightsModel->findByToken($token);
+      $preflight = new PreflightEntity([
+        "email" => $email,
+        "token" => $token,
+      ]);
       // 署名生成(1時間有効)
       $signature = $preflight->createSignature(60*60*1);
       
       // 認証コードメール送信
-      //$preflight->sendAuthcodeMail();
+      $preflight->sendAuthcodeNotice($authcode);
       
       // [200]
       return $this->respond([
         "status" => 200,
         "signature" => $signature,
+        "email" => $email,
+        "authcode" => $authcode,
       ]);
     } 
     // データベース例外

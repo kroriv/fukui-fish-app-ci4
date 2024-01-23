@@ -77,7 +77,7 @@ class PreflightsModel extends Model
     $result = $query->execute(
       $data["email"],
       $key,
-      $data["authcode"],
+      password_hash($data["authcode"], PASSWORD_DEFAULT),
       $data["token"],
       "*"
     );

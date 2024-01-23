@@ -2,21 +2,22 @@
 
 use CodeIgniter\Entity\Entity;
 use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 use App\Helpers\UtilHelper;
+use App\Models\TemplatesModel;
+use App\Entities\TemplateEntity;
 
 class PreflightEntity extends Entity
 {
   /** @var Array Attributes */
   protected $attributes = [
-    "num"    => null,
-    "title"  => "*",
-    "email"  => null,
-    "authcode"  => null,
-    "token"  => null,
+    "num" => null,
+    "title" => "*",
+    "email" => null,
+    "authcode" => null,
+    "token" => null,
     "dragSortOrder" => null,
     "createdByUserNum" => 1,
     "updatedByUserNum" => 1
@@ -36,9 +37,9 @@ class PreflightEntity extends Entity
   {
     return
     [
-      "email"  => $this->email,
-      "authcode"  => $this->authcode,
-      "token"  => $this->token,
+      "email" => $this->email,
+      "authcode" => $this->authcode,
+      "token" => $this->token,
     ];
   }
   
@@ -58,10 +59,59 @@ class PreflightEntity extends Entity
   
   /**
    * メール送信関数
-   * @param object $event
-   * @param object $settings
    */
-  public function sendAuthcodeMail(object $event, object $settings): void
+  public function sendAuthcodeNotice(string $authcode): void
+  {
+    // TemplatesModel生成
+    $templatesModel = new TemplatesModel();
+    // Template取得
+    $temlate = $templatesModel->where("num", 1)->first();
+    
+    // 言語、内部エンコーディングを指定
+    mb_language("japanese");
+    mb_internal_encoding("UTF-8");
+    
+    // PHPMailer
+    $mailer = new PHPMailer(true);
+    
+    try 
+    {
+      require ROOTPATH . "vendor/autoload.php";
+      require ROOTPATH . "vendor/phpmailer/phpmailer/language/phpmailer.lang-ja.php";
+      
+      // Replacement
+      ob_start();
+      $body = $temlate->preflight_authcode_notice_content;
+      $body = str_replace("%認証コード%", $authcode, $body);
+      ob_clean();
+      
+      $mailer->isSMTP();
+      $mailer->SMTPAuth = true;
+      $mailer->Host = getenv("smtp.default.hostname");
+      $mailer->Username = getenv("smtp.default.username");
+      $mailer->Password = getenv("smtp.default.password");
+      $mailer->Port = intval(getenv("smtp.default.port"));
+      $mailer->SMTPSecure = "tls";
+      $mailer->CharSet = "utf-8";
+      $mailer->Encoding = "base64";
+      $mailer->setFrom(getenv("smtp.default.from"), "FUKUI BRAND FISH");
+      $mailer->addAddress($this->email);
+      $mailer->Subject = $temlate->preflight_authcode_notice_title; 
+      $mailer->Body = UtilHelper::Br2Nl($body);
+      
+      // 本番環境・ステージング環境のみ送信
+      if (getenv("CI_ENVIRONMENT") === "production")
+      {
+        $mailer->send();
+      }
+    }
+    catch (Exception $e)
+    {
+      
+    }
+  }
+  
+  public function sendTestNotice(): void
   {
     // 言語、内部エンコーディングを指定
     mb_language("japanese");
@@ -75,42 +125,34 @@ class PreflightEntity extends Entity
       require ROOTPATH . "vendor/autoload.php";
       require ROOTPATH . "vendor/phpmailer/phpmailer/language/phpmailer.lang-ja.php";
       
-      //日本語用設定
-      //$mailer->CharSet = "iso-2022-jp";
-      $mailer->CharSet = "UTF-8";
-      //$mailer->Encoding = "7bit";
+      $to = "kroriv.github.io@gmail.com";
+      $to_name = 'Taro Yamada';
+      $subject = 'メールの件名';
+      $body = 'メールの本文';
       
-      // FormJSON
-      $form_json = json_decode($this->form_json);
+      $mailer->isSMTP();
+      $mailer->SMTPAuth = true;
+      $mailer->Host = getenv("smtp.default.hostname");
+      $mailer->Username = getenv("smtp.default.username");
+      $mailer->Password = getenv("smtp.default.password");
+      $mailer->Port = 587;
+      $mailer->SMTPSecure = "tls";
+      $mailer->CharSet = "utf-8";
+      $mailer->Encoding = "base64";
+      $mailer->setFrom(getenv("smtp.default.from"), "FUKUI BRAND FISH");
+      $mailer->addAddress($to, $to_name);
+      $mailer->Subject = $subject;
+      $mailer->Body = $body;
       
-      // Replacement
-      ob_start();
-      $body = $settings->reply_body;
-      $body = str_replace("%担当者名%", $form_json->officer, $body);
-      $body = str_replace("%イベントカテゴリ%", $event->category, $body);
-      $body = str_replace("%イベント名%", $event->title, $body);
-      $body = str_replace("%チケットURL%", getenv("app.ticketUrl") . sprintf("/%s/ticket/", $this->section). $this->token, $body);
-      $body = str_replace("%認証コード%", $this->uuid, $body);
-      $body = str_replace("%送信内容%", $this->form_content, $body);
-      ob_clean();
-      
-      $mailer->setFrom("reply@tooway.jp", "福井工業大学 予約受付システム"); // 送信者
-      $mailer->addAddress($this->email);   // 宛先
-      $mailer->Subject = "予約が完了しました。[福井工業大学]"; 
-      $mailer->Body = UtilHelper::Br2Nl($body);
-      
+      // 本番環境・ステージング環境のみ送信
       if (getenv("CI_ENVIRONMENT") === "production")
       {
-        // 申込者へ送信
-        if (@$this->email)
-        {
-          $mailer->send();
-        }
+        $mailer->send();
       }
     }
-    catch (\Exception $e)
+    catch (Exception $e)
     {
-      
+      print_r($e->getMessage());
     }
   }
 }
