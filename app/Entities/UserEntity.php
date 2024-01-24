@@ -86,11 +86,6 @@ class UserEntity extends Entity
       require ROOTPATH . "vendor/autoload.php";
       require ROOTPATH . "vendor/phpmailer/phpmailer/language/phpmailer.lang-ja.php";
       
-      // Replacement
-      ob_start();
-      $body = $temlate->user_thanks_notice_content;
-      ob_clean();
-      
       $mailer->isSMTP();
       $mailer->SMTPAuth = true;
       $mailer->Host = getenv("smtp.default.hostname");
@@ -101,9 +96,9 @@ class UserEntity extends Entity
       $mailer->CharSet = "utf-8";
       $mailer->Encoding = "base64";
       $mailer->setFrom(getenv("smtp.default.from"), "FUKUI BRAND FISH");
-      $mailer->addAddress($this->email);
+      $mailer->addAddress($this->username);
       $mailer->Subject = $temlate->user_thanks_notice_title; 
-      $mailer->Body = UtilHelper::Br2Nl($body);
+      $mailer->Body = UtilHelper::Br2Nl($temlate->user_thanks_notice_content);
       
       // 本番環境・ステージング環境のみ送信
       if (getenv("CI_ENVIRONMENT") === "production")
@@ -113,7 +108,6 @@ class UserEntity extends Entity
     }
     catch (Exception $e)
     {
-      
     }
   }
 }

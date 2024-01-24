@@ -215,8 +215,8 @@ class SignupApiController extends ResourceController
     // メールアドレス取得
     $email = @$postPreflight["email"];
     // 認証コード生成
-    //$authcode = UtilHelper::GetRandomNumber(4);
-    $authcode = "1111";
+    $authcode = UtilHelper::GetRandomNumber(4);
+    //$authcode = "1111";
     // 認証識別子生成
     $token = UtilHelper::GenerateToken(64);
     
@@ -380,6 +380,9 @@ class SignupApiController extends ResourceController
         "personal" => $personal,
         "token" => $token,
       ]);
+      
+      // UserEntity取得
+      $user = $usersModel->findByToken($token);
       
       // 利用者登録登録完了メール送信
       $user->sendThanksNotice();
