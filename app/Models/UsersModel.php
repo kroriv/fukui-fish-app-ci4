@@ -55,11 +55,12 @@ class UsersModel extends Model
     // クエリ生成
     $query = $this->db->prepare(static function ($db) 
     {
-      $sql = "SELECT AES_DECRYPT(`username`, UNHEX(SHA2(?,512))) AS username, token FROM cmsb_users WHERE token IS NOT NULL AND token = ?";
+      $sql = "SELECT *, AES_DECRYPT(`username`, UNHEX(SHA2(?,512))) AS `username`, AES_DECRYPT(`personal`, UNHEX(SHA2(?,512))) AS `personal` FROM cmsb_users WHERE token IS NOT NULL AND token = ?";
       return (new Query($db))->setQuery($sql);
     });
     // クエリ実行
     $result = $query->execute(
+      $key,
       $key,
       $token
     );
@@ -83,7 +84,7 @@ class UsersModel extends Model
     $result = $query->execute(
       $data["username"],
       $key,
-      $data["passphrase"],
+      password_hash($data["passphrase"], PASSWORD_DEFAULT),
       $data["section"],
       $data["viewname"],
       json_encode($data["personal"]),

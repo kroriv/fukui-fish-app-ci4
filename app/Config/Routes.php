@@ -29,3 +29,5 @@ $routes->post("/api/signup/auth.preflight", "SignupApiController::AuthPreflight"
 $routes->post("/api/signup/create.user", "SignupApiController::CreateUser");
 // 利用者認証
 $routes->post("/api/signin/auth.user", "SigninApiController::AuthUser");
+// 利用者防護
+$routes->post("/api/signin/guard.user", "SigninApiController::GuardUser");

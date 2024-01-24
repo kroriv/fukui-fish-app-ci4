@@ -5,6 +5,8 @@ use Firebase\JWT\JWT;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
+use App\Helpers\UtilHelper;
+use App\Models\TemplatesModel;
 
 class UserEntity extends Entity
 {
@@ -56,9 +58,62 @@ class UserEntity extends Entity
       "username" => $this->username,
       "section" => $this->section,
       "viewname" => $this->viewname,
-      "personal" => $this->personal,
+      "personal" => json_decode($this->personal),
       "active" => $this->active,
       "token" => $this->token,
     ];
+  }
+  
+  /**
+   * 認証コード通知メール送信関数
+   */
+  public function sendThanksNotice(): void
+  {
+    // TemplatesModel生成
+    $templatesModel = new TemplatesModel();
+    // Template取得
+    $temlate = $templatesModel->where("num", 1)->first();
+    
+    // 言語、内部エンコーディングを指定
+    mb_language("japanese");
+    mb_internal_encoding("UTF-8");
+    
+    // PHPMailer
+    $mailer = new PHPMailer(true);
+    
+    try 
+    {
+      require ROOTPATH . "vendor/autoload.php";
+      require ROOTPATH . "vendor/phpmailer/phpmailer/language/phpmailer.lang-ja.php";
+      
+      // Replacement
+      ob_start();
+      $body = $temlate->user_thanks_notice_content;
+      ob_clean();
+      
+      $mailer->isSMTP();
+      $mailer->SMTPAuth = true;
+      $mailer->Host = getenv("smtp.default.hostname");
+      $mailer->Username = getenv("smtp.default.username");
+      $mailer->Password = getenv("smtp.default.password");
+      $mailer->Port = intval(getenv("smtp.default.port"));
+      $mailer->SMTPSecure = "tls";
+      $mailer->CharSet = "utf-8";
+      $mailer->Encoding = "base64";
+      $mailer->setFrom(getenv("smtp.default.from"), "FUKUI BRAND FISH");
+      $mailer->addAddress($this->email);
+      $mailer->Subject = $temlate->user_thanks_notice_title; 
+      $mailer->Body = UtilHelper::Br2Nl($body);
+      
+      // 本番環境・ステージング環境のみ送信
+      if (getenv("CI_ENVIRONMENT") === "production")
+      {
+        $mailer->send();
+      }
+    }
+    catch (Exception $e)
+    {
+      
+    }
   }
 }

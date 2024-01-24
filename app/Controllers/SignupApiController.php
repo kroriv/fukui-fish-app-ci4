@@ -113,7 +113,7 @@ class SignupApiController extends ResourceController
       // [411]
       return [
         "status" => 411,
-        "message" => "JSONの形式が不正です。"
+        "message" => "認証署名のJSON形式が不正です。"
       ];
     }
     // 署名形式例外
@@ -215,8 +215,8 @@ class SignupApiController extends ResourceController
     // メールアドレス取得
     $email = @$postPreflight["email"];
     // 認証コード生成
-    $authcode = UtilHelper::GetRandomNumber(4);
-    //$authcode = "1111";
+    //$authcode = UtilHelper::GetRandomNumber(4);
+    $authcode = "1111";
     // 認証識別子生成
     $token = UtilHelper::GenerateToken(64);
     
@@ -342,7 +342,7 @@ class SignupApiController extends ResourceController
     // ユーザー名取得
     $username = $postUser["username"];
     // パスワード取得
-    $passphrase = password_hash($postUser["passphrase"], PASSWORD_DEFAULT);
+    $passphrase = $postUser["passphrase"];
     // 利用者区分取得
     $section = $postUser["section"];
     // 店舗名・屋号取得
@@ -382,7 +382,7 @@ class SignupApiController extends ResourceController
       ]);
       
       // 利用者登録登録完了メール送信
-      //$user->sendThanksMail();
+      $user->sendThanksNotice();
       
       // [200]
       return $this->respond([

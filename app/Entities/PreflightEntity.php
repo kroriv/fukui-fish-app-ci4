@@ -7,7 +7,6 @@ use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 use App\Helpers\UtilHelper;
 use App\Models\TemplatesModel;
-use App\Entities\TemplateEntity;
 
 class PreflightEntity extends Entity
 {
@@ -58,7 +57,7 @@ class PreflightEntity extends Entity
   }
   
   /**
-   * メール送信関数
+   * 認証コード通知メール送信関数
    */
   public function sendAuthcodeNotice(string $authcode): void
   {
